@@ -10,6 +10,9 @@ button, input[type="text"] {
   padding: 5px;
 }
 
+.err {
+  color: red;
+}
 button:hover {
   cursor: pointer;
 }

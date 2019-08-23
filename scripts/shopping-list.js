@@ -53,6 +53,9 @@ const shoppingList = (function(){
       items = items.filter(item => item.name.includes(store.searchTerm));
     }
   
+    if (store.error === ''){
+      $('.err').empty();
+    }
     // render the shopping list in the DOM
     console.log('`render` ran');
     const shoppingListItemsString = generateShoppingItemsString(items);
@@ -68,11 +71,16 @@ const shoppingList = (function(){
       const newItemName = $('.js-shopping-list-entry').val();
       $('.js-shopping-list-entry').val('');
       api.createItem(newItemName)
-        .then(res => res.json())
+        .then(res => {
+          if (res.ok) {
+            return res.json();
+          }
+          throw new Error('Update failed, please try again.')})
         .then(resJson => {
           store.addItem(resJson);
           render();
-        });
+        })
+        .catch(error => catchError(error));
     });
   }
   
@@ -87,11 +95,18 @@ const shoppingList = (function(){
       const id = getItemIdFromElement(event.currentTarget);
       const item = store.findById(id);
       api.updateItem(id, {checked: !item.checked})
-        .then(res => res.json())
+        .then(res => {
+          if (res.ok) {
+            return res.json();
+          }
+          throw new Error('Update failed, please try again.')})
         .then(resJSON => {
           store.findAndUpdate(id, {checked: !item.checked});
           render();
-        });
+        })
+        .catch(error => catchError(error)
+        );
+
     });
   }
   
@@ -101,16 +116,30 @@ const shoppingList = (function(){
       // get the index of the item in store.items
       const id = getItemIdFromElement(event.currentTarget);
       api.deleteItem(id)
-        .then(res => res.json())
+        .then(res => {
+          if (res.ok) {
+            return res.json()
+          }
+          throw new Error('Delete Item failed, Please try again')
+        })
         .then(resJSON => {
           // delete the item
           store.findAndDelete(id);
           // render the updated shopping list
           render();
-        });
+        })
+        .catch(error => catchError(error)
+        );
     });
   }
   
+  function catchError(error) {
+    store.error = error;
+    $('h1').append(`<p class='err'>${store.error}</p>`);
+    render();
+    store.error = '';
+  }; 
+
   function handleEditShoppingItemSubmit() {
     $('.js-shopping-list').on('submit', '.js-edit-item', event => {
       event.preventDefault();
@@ -120,12 +149,17 @@ const shoppingList = (function(){
         name: itemName
       };
       api.updateItem(id, newName)
-        .then(res => res.json())
+        .then(res => {
+          if (res.ok) {
+            return res.json();
+          }
+          throw new Error('Update failed, please try again.')})
         .then(resJSON =>  {
           store.findAndUpdate(id, newName);
           store.setItemIsEditing(id, false);
           render();
-        });
+        })
+        .catch(error => catchError(error));
      
     });
   }
